@@ -30,14 +30,33 @@ return 1
 Functions can be called in two main contexts:
 
 ### 1. Direct Statement / Verb Execution
-When called as a statement, the function executes imperatively against the active object:
+When called as a standard statement, the function creates a **new stack frame**:
 ```scp
 f_heal_target 25
 src.f_heal_target 50
 uid.01234.f_heal_target 100
 ```
 
-### 2. Expression Evaluation `<...>`
+### 2. Stack-Preserving Execution: `CALL <function>`
+When invoked with the `CALL` keyword, SphereServer reuses the **active `CScriptTriggerArgs` frame**:
+- **Local Inheritance**: All `local.*` variables defined in the calling function/trigger are **passed directly down** to the called function.
+- **Shared Mutations**: Any `local.*` variables modified or created in the sub-function remain present in the caller after `CALL` returns.
+- **Common Usage**: Modular gump drawing (`qDialogs.scp`, `AchievementsMenu.scp`) and multi-stage algorithms sharing state across subroutines.
+
+```scp
+[FUNCTION f_render_menu]
+local.Width = 300
+local.Height = 200
+CALL f_render_header
+CALL f_render_body
+CALL f_render_footer
+
+[FUNCTION f_render_header]
+// Reads local.Width from caller without passing it as argument:
+resizepic 0 0 3500 <local.Width> 40
+```
+
+### 3. Expression Evaluation `<...>`
 When called inside `< >`, the function executes and evaluates to its return value:
 ```scp
 local.Result = <f_calculate_tax 500,10>

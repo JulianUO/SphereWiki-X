@@ -136,20 +136,18 @@ This is the complete SphereScript language reference for SphereServer X. It docu
 
 ## 🤖 Agent Guidelines & Specialized Skills
 
-| Section / Guide | Description |
+| Section / Skill | Description |
 | --- | --- |
-| [agent-guidelines/README.md](agent-guidelines/README.md) | Overview of agent rules, invariants, and architecture |
-| [agent-guidelines/scripting-agent-guide.md](agent-guidelines/scripting-agent-guide.md) | Complete engineering standards for writing SphereScript |
-| [agent-guidelines/vscode-plugin-spec.md](agent-guidelines/vscode-plugin-spec.md) | VS Code extension architecture and TextMate rules |
+| [agent-guidelines/README.md](agent-guidelines/README.md) | Overview of agent architecture and rules |
 | **[agent-guidelines/skills/](agent-guidelines/skills/README.md)** | **Directory of all specialized development, scripting & doc skills** |
+| ↳ [sphereserver-scripting-lang](agent-guidelines/skills/sphereserver-scripting-lang/SKILL.md) | Definitive SphereScript reference, quality standards, triggers & invariants |
+| ↳ [sphereserver-docs-maintenance](agent-guidelines/skills/sphereserver-docs-maintenance/SKILL.md) | Audit & synchronization workflow for documentation |
 | ↳ [cpp-pro](agent-guidelines/skills/cpp-pro/SKILL.md) | Modern C++20/23, template metaprogramming & SIMD |
 | ↳ [cpp-coding-standards](agent-guidelines/skills/cpp-coding-standards/SKILL.md) | C++ Core Guidelines & RAII safety standards |
 | ↳ [cpp-header-inclusion](agent-guidelines/skills/cpp-header-inclusion/SKILL.md) | Topological header inclusion layering rules |
 | ↳ [cpp-static-thread-safety](agent-guidelines/skills/cpp-static-thread-safety/SKILL.md) | Clang static thread safety annotations |
 | ↳ [sphereserver-crossplatform](agent-guidelines/skills/sphereserver-crossplatform/SKILL.md) | Cross-platform CMake builds (Windows/Linux/ARM) |
 | ↳ [sphereserver-game-systems](agent-guidelines/skills/sphereserver-game-systems/SKILL.md) | Core C++ objects, tick loops & memory architecture |
-| ↳ [sphereserver-scripting-lang](agent-guidelines/skills/sphereserver-scripting-lang/SKILL.md) | SphereScript grammar, triggers, pointers & invariants |
-| ↳ [sphereserver-docs-maintenance](agent-guidelines/skills/sphereserver-docs-maintenance/SKILL.md) | Audit & synchronization workflow for documentation |
 
 ---
 

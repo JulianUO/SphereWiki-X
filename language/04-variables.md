@@ -32,14 +32,30 @@ sysmessage Count is <local.count>
 ```
 
 - Scoped to the current **function or trigger invocation**.
-- Destroyed when the function/trigger returns.
-- **Cannot** be accessed from called sub-functions — each call has its own stack frame.
-- Name is case-insensitive: `local.Count` and `local.count` are the same.
-- `<dlocal.X>` reads the value and forces **decimal numeric interpretation** (useful as dynamic index):
+- Destroyed when the function/trigger execution frame terminates.
+- **Normal function invocation (`f_subfunc`)**: A new isolated stack frame is created. Sub-functions **cannot** access caller `local.*` variables.
+- **`CALL` invocation (`CALL f_subfunc`)**: Reuses the active `CScriptTriggerArgs` scope. All caller `local.*` variables **are inherited, readable, and modifiable** by the sub-function! Any changes or new locals created in the sub-function persist back in the caller.
+- Name is case-insensitive: `local.Count` and `local.count` are identical.
+- `<dlocal.X>` reads the value and forces **decimal numeric interpretation** (essential when building dynamic keys):
 
 ```scp
 local.idx = 3
 tag0.quest.<dlocal.idx>.complete = 1   // Sets tag0.quest.3.complete
+```
+
+### Local Variable Sharing via `CALL` Example
+```scp
+[FUNCTION f_main]
+local.Color = @044
+local.Title = Adventurer
+CALL f_helper_display
+// After CALL returns, local.Processed is available here
+sysmessage @,,1 Helper returned with status: <dlocal.Processed>
+
+[FUNCTION f_helper_display]
+// Directly reads caller's local variables without passing parameters:
+sysmessage <local.Color> Welcome, <local.Title>!
+local.Processed = 1
 ```
 
 ---
