@@ -1,0 +1,68 @@
+{
+  "name": "spherescript-scripter",
+  "displayName": "SphereScript (SphereServer X)",
+  "description": "Comprehensive syntax highlighting, intelligent formatting, snippets, and autocompletion for SphereServer X (.scp) scripts. Originally developed and edited by RayIde and the SphereServer Community.",
+  "version": "2.0.0",
+  "publisher": "SphereCommunity",
+  "author": "RayIde",
+  "contributors": [
+    "RayIde",
+    "Sphere Community"
+  ],
+  "engines": {
+    "vscode": "^1.79.0"
+  },
+  "keywords": [
+    "Sphere",
+    "SphereServer",
+    "Sphere X",
+    "Source-X",
+    "SphereScript",
+    "Ultima Online",
+    "scp"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Formatters"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "spherescript",
+        "aliases": [
+          "SphereScript",
+          "Sphere",
+          "SCP",
+          "scp"
+        ],
+        "extensions": [
+          ".scp",
+          ".dic"
+        ],
+        "configuration": "./spherescript.configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "spherescript",
+        "scopeName": "source.spherescript",
+        "path": "./syntaxes/spherescript.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "spherescript",
+        "path": "./snippets/spherescript.snippets.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[spherescript]": {
+        "editor.defaultFormatter": "SphereCommunity.spherescript-scripter",
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4
+      }
+    }
+  }
+}

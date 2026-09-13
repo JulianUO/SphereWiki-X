@@ -1,0 +1,183 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SphereScript",
+  "scopeName": "source.spherescript",
+  "fileTypes": [
+    "scp",
+    "dic"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#sections"
+    },
+    {
+      "include": "#triggers"
+    },
+    {
+      "include": "#control_flow"
+    },
+    {
+      "include": "#intrinsic_functions"
+    },
+    {
+      "include": "#objects_and_pointers"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "include": "#properties_and_verbs"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#macros"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.spherescript",
+          "match": "(//).*$\\n?"
+        },
+        {
+          "name": "comment.block.documentation.spherescript",
+          "begin": "(?i)^\\s*\\[COMMENT[^\\]]*\\]",
+          "end": "(?=^\\s*\\[(?!COMMENT))"
+        },
+        {
+          "name": "comment.block.multiline.spherescript",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "sections": {
+      "patterns": [
+        {
+          "name": "meta.section.spherescript",
+          "match": "(?i)^\\s*(\\[)(ITEMDEF|CHARDEF|FUNCTION|EVENTS|TYPEDEF|DEFNAME|RESDEFNAME|DIALOG|TEMPLATE|SKILL|SPELL|MULTI|REGIONTYPE|REGIONRESOURCE|NAMES|PLEVEL|AREADEF|ROOMDEF|SPAWN|SKILLMENU|SKILLCLASS|RESOURCES|EOF)(\\s+([^\\]]+))?(\\])",
+          "captures": {
+            "1": { "name": "punctuation.definition.section.begin.spherescript" },
+            "2": { "name": "keyword.control.section.spherescript" },
+            "4": { "name": "entity.name.section.spherescript" },
+            "5": { "name": "punctuation.definition.section.end.spherescript" }
+          }
+        }
+      ]
+    },
+    "triggers": {
+      "patterns": [
+        {
+          "name": "meta.trigger.spherescript",
+          "match": "(?i)^\\s*(ON)\\s*(=)\\s*(@?[A-Za-z0-9_]+)",
+          "captures": {
+            "1": { "name": "keyword.control.trigger.spherescript" },
+            "2": { "name": "punctuation.separator.key-value.spherescript" },
+            "3": { "name": "entity.name.function.trigger.spherescript" }
+          }
+        }
+      ]
+    },
+    "control_flow": {
+      "patterns": [
+        {
+          "name": "keyword.control.spherescript",
+          "match": "(?i)\\b(if|elif|elseif|else|endif|for|endfor|while|enddo|doswitch|return|continue|try)\\b"
+        },
+        {
+          "name": "keyword.control.loop.forcont.spherescript",
+          "match": "(?i)\\b(forcont)\\b"
+        }
+      ]
+    },
+    "intrinsic_functions": {
+      "patterns": [
+        {
+          "name": "support.function.intrinsic.spherescript",
+          "match": "(?i)\\b(eval|feval|floatval|muldiv|qval|strarg|streat|strmatch|isempty|strlen|strupr|strlwr|strindexof|hval|resourceindex|resdef|rand|max|min|safe)\\b"
+        }
+      ]
+    },
+    "objects_and_pointers": {
+      "patterns": [
+        {
+          "name": "variable.language.pointer.spherescript",
+          "match": "(?i)\\b(src|argo|act|new|link|owner|serv|db|ldb|file|ref[1-5]|uid)\\b"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.scoped.spherescript",
+          "match": "(?i)\\b(local|tag|tag0|dlocal|dtag0|ctag|ctag0|var|var0|def|def0|argn|argn1|argn2|argn3|args|argv)\\b"
+        }
+      ]
+    },
+    "properties_and_verbs": {
+      "patterns": [
+        {
+          "name": "support.function.verb.spherescript",
+          "match": "(?i)\\b(sysmessage|message|say|emote|bounce|equip|unequip|remove|go|tele|kill|resurrect|effect|sound|anim|face|sdialog|dialogclose|dupe|drop|use|decay|save|savestatics|newitem|newnpc|newsummon|allclients|log|targetf|timer)\\b"
+        },
+        {
+          "name": "support.variable.property.spherescript",
+          "match": "(?i)\\b(name|id|dispid|type|baseid|p|dir|color|hue|amount|weight|maxweight|modmaxweight|hits|maxhits|modmaxhits|stam|maxstam|modmaxstam|mana|maxmana|modmaxmana|str|dex|int|modstr|moddex|modint|armor|dam|karma|fame|food|flags|attr|can|canmask|more1|more2|morep|morez|more1l|more1h|tdata1|tdata2|tdata3|tdata4|isvalid|ischar|isitem|isplayer|isgm|isneartype|findid|findlayer|memoryfindtype)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.spherescript",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.spherescript",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.spherescript",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.spherescript",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "macros": {
+      "patterns": [
+        {
+          "name": "meta.macro.bracket.spherescript",
+          "begin": "<",
+          "end": ">",
+          "patterns": [
+            { "include": "#intrinsic_functions" },
+            { "include": "#objects_and_pointers" },
+            { "include": "#variables" },
+            { "include": "#properties_and_verbs" },
+            { "include": "#numbers" },
+            { "include": "#macros" }
+          ]
+        }
+      ]
+    }
+  }
+}

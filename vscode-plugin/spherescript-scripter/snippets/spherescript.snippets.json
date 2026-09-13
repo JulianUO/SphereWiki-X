@@ -1,0 +1,118 @@
+{
+  "Item Definition": {
+    "prefix": "itemdef",
+    "body": [
+      "[ITEMDEF ${1:i_custom_item}]",
+      "DEFNAME=${1:i_custom_item}",
+      "ID=${2:0e85}",
+      "NAME=${3:Custom Item}",
+      "TYPE=${4:t_normal}",
+      "WEIGHT=${5:10}",
+      "VALUE=${6:100}",
+      "",
+      "ON=@Create",
+      "\t${0}",
+      "",
+      "ON=@DClick",
+      "\treturn 1"
+    ],
+    "description": "Create a new Sphere ITEMDEF section"
+  },
+  "Char Definition": {
+    "prefix": "chardef",
+    "body": [
+      "[CHARDEF ${1:c_custom_npc}]",
+      "DEFNAME=${1:c_custom_npc}",
+      "ID=${2:c_man}",
+      "NAME=${3:#NAMES_HUMANMALE the NPC}",
+      "SOUND=${4:snd_human_foomph01}",
+      "CAN=${5:mt_walk|mt_run|mt_usehands}",
+      "DAM=${6:5,10}",
+      "ARMOR=${7:20}",
+      "STR=${8:{80 100}}",
+      "DEX=${9:{70 90}}",
+      "INT=${10:{40 60}}",
+      "",
+      "ON=@Create",
+      "\tNPC=${11:brain_human}",
+      "\tCOLOR=0",
+      "\t${0}"
+    ],
+    "description": "Create a new Sphere CHARDEF section"
+  },
+  "Function Definition": {
+    "prefix": "func",
+    "body": [
+      "[FUNCTION ${1:f_custom_function}]",
+      "${0}",
+      "return 1"
+    ],
+    "description": "Create a new Sphere FUNCTION section"
+  },
+  "Events Definition": {
+    "prefix": "events",
+    "body": [
+      "[EVENTS ${1:e_custom_events}]",
+      "",
+      "ON=@GetHit",
+      "\t${0}",
+      "",
+      "ON=@Death",
+      "\t"
+    ],
+    "description": "Create a new Sphere EVENTS section"
+  },
+  "TypeDef Definition": {
+    "prefix": "typedef",
+    "body": [
+      "[TYPEDEF ${1:t_custom_type}]",
+      "",
+      "ON=@DClick",
+      "\t${0}",
+      "\treturn 1"
+    ],
+    "description": "Create a new Sphere TYPEDEF section"
+  },
+  "Dialog Definition": {
+    "prefix": "dialog",
+    "body": [
+      "[DIALOG ${1:d_custom_menu}]",
+      "0,0",
+      "nomove",
+      "page 0",
+      "resizepic 100 100 01453 300 250",
+      "dhtmlgump 120 120 260 25 0 0 <def.bfont_yellow>${2:Title}<def.bfont_black>",
+      "button 210 300 0995 0996 1 0 1",
+      "",
+      "[DIALOG ${1:d_custom_menu} TEXT]",
+      "",
+      "[DIALOG ${1:d_custom_menu} BUTTON]",
+      "ON=0",
+      "\t// Cancelled",
+      "",
+      "ON=1",
+      "\t${0}"
+    ],
+    "description": "Create a new Sphere DIALOG section scaffold"
+  },
+  "For Container Loop": {
+    "prefix": "forcont",
+    "body": [
+      "forcont <${1:findlayer.layer_pack.uid}> ${2:2}",
+      "\tif (<baseid> == ${3:i_gold})",
+      "\t\t${0}",
+      "\tendif",
+      "endfor"
+    ],
+    "description": "Container iteration loop"
+  },
+  "If Block": {
+    "prefix": "if",
+    "body": [
+      "if (${1:condition})",
+      "\t${0}",
+      "endif"
+    ],
+    "description": "If condition block"
+  }
+}
