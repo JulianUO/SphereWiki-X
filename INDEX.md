@@ -118,7 +118,19 @@ This is the complete SphereScript language reference for SphereServer X. It docu
 | [sphere-ini/core-settings.md](sphere-ini/core-settings.md) | Network, world, performance settings |
 | [sphere-ini/features-flags.md](sphere-ini/features-flags.md) | Features=, FeaturesLogin=, FeaturesExtra= |
 | [sphere-ini/combat-magic.md](sphere-ini/combat-magic.md) | CombatFlags=, MagicFlags=, ParryFlags= |
-| [sphere-ini/events-global.md](sphere-ini/events-global.md) | EventsPlayer=, EventsPet=, EventsItem=, EventsRegion= |
+| [sphere-ini/engine-flags.md](sphere-ini/engine-flags.md) | EngineVirtues=, EngineInsurance=, EngineBulkOrders= |
+| [sphere-ini/resources-maps.md](sphere-ini/resources-maps.md) | Map sizes, mul/uop paths, resource definitions |
+
+---
+
+## 🌐 Network Packets Reference
+
+| Doc | Content |
+| --- | --- |
+| [packets/README.md](packets/README.md) | Overview of network protocol, packet types, and byte order |
+| [packets/standard-packets.md](packets/standard-packets.md) | Standard packets (`0x00` - `0xFF`), byte layouts & handlers |
+| [packets/extended-bf-packets.md](packets/extended-bf-packets.md) | Extended `0xBF` subcommands (Party, Tooltips, Macros, Precast) |
+| [packets/encoded-d7-packets.md](packets/encoded-d7-packets.md) | Encoded `0xD7` subcommands (Custom Housing, Special Moves) |
 
 ---
 

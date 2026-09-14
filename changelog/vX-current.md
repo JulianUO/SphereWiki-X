@@ -31,6 +31,12 @@
   - `JLOCAL.<dict>.<key> = <val>`: Volatile execution-frame dictionaries cleaned up automatically.
   - `SERV.JTAG.<dict>.<key> = <val>`: Global server dictionaries saved in `[GLOBALS]`.
   - Built-in methods: `<dict.COUNT>`, `<dict.ISEMPTY>`, `<dict.HASKEY key>`, `<dict.KEYS>`, `<dict.VALUES>`, `dict.REMOVE key`, `dict.CLEAR`.
+- **NPC AI Tactical Properties**:
+  - `NPCAI_AGGROLEVEL`: `0`=Passive, `1`=Domestic, `2`=Territorial, `3`=Aggressive, `4`=LongSight.
+  - `NPCAI_ROLE`: `0`=Default, `1`=Tank, `2`=Healer, `3`=Buffer, `4`=Mage, `5`=Archer, `6`=MeleeDPS.
+  - `NPCAI_PACKID` & `NPCAI_PACKRADIUS`: Group identification and assistance broadcast radius for wolfpacks, bandit squads, and allied mobs.
+  - `NPCAI_REACTTOACTIONS`: Bitmask for environmental reactions (`0x01` Spellcast, `0x02` Thievery, `0x04` Warmode, `0x08` Looting, `0x10` Proximity, `0x20` Running).
+  - `NPCAI_VISUALRANGE`: Custom line-of-sight visual perception distance.
 
 ---
 
@@ -39,3 +45,16 @@
 - **`@HitCheck` & Combat Refactor**: `@SkillStart` is called only once when entering combat; intermediate swings fire `@HitCheck`, `@HitTry`, `@Hit`, `@GetHit`.
 - **`@DropOn_Ground`**: Now fires **BEFORE** the item's new position `P` is assigned. The target point is stored in `ARGS`.
 - **Garbage Collection Line Reporting**: GC reports script filename and line number where unplaced items were created.
+- **NPC AI Triggers**:
+  - `@NPCAIPackCallAssistance`: Fires when a pack member requests combat reinforcement (`argn1`=threat level, `src`=combat target).
+  - `@NPCAIReactToAction`: Fires when an NPC reacts to environmental player actions (`argn1`=action type flag, `src`=acting player).
+  - `@NPCAITacticalDecision`: Fires before executing a role-based tactical action (`argn1`=role, `argn2`=distance, `src`=target).
+
+---
+
+## 4. Navigation & Pathfinding Architecture
+
+- **Theta\* String-Pulling & LOS Smoothing**: A\* pathfinding performs line-of-sight string pulling to prune redundant zigzag waypoints.
+- **Hierarchical Navigation (`CNavHierarchical`)**: Long-distance multi-screen routing through topological waypoints.
+- **Follower Breadcrumb Trail (`CNavTrail`)**: Real-time trail recording ensures pets and escort followers walk exact player footsteps without desync.
+- **Door-Aware Dynamic Obstacle Clearing**: Pathfinding inspects doors and interactive obstacles, dynamically opening unlatched doors along routes.

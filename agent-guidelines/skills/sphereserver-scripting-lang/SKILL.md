@@ -113,6 +113,91 @@ local.propName = <def.ItemProp<local.ItemType>_<dlocal.GetProp>>
 ### 3.4 Resource ID vs Constant Lookups (`RESDEF` vs `DEF`)
 > **INVARIANT 3.4**: In Source-X, use `<RESDEF.name>` to retrieve the integer resource ID of an item/char/spell definition, and `<DEF.name>` strictly for constants declared in `[DEFNAME]` blocks.
 
+### 3.5 Top Container & Object Hierarchy Traversal (`<topcont.uid>`, `<topobj.uid>`)
+> **INVARIANT 3.5**: On item event triggers such as `@DClick` or `@ClientTooltip`, NEVER query `<src.targ.topcont.uid>` or `<src.targ...>`. `src.targ` is undefined or invalid outside active target callbacks and causes runtime resolution errors (`Can't resolve <src.targ.topcont.uid>`).
+> - Use `<topcont.uid>` to query the top container of the current item (`this`).
+> - Use `<topobj.uid>` to query the root owner entity UID.
+> - To check if an item is in the actor's backpack:
+>
+> ```scp
+> // ❌ WRONG: Causes "Can't resolve <src.targ.topcont.uid>" error on @DClick
+> if (<src.targ.topcont.uid> != <src.findlayer.21.uid>)
+>
+> // ✅ CORRECT: Query active item container directly
+> if (<topcont.uid> != <src.findlayer.21.uid>)
+>     src.sysmessage @020 Debes tener el objeto en tu mochila para usarlo.
+>     return 1
+> endif
+> ```
+
+### 3.6 Property Naming & Resource Definitions (`COLOR` vs `hue`, `RESOURCES`)
+> **INVARIANT 3.6**:
+> 1. In SphereScript, item and character color property is `COLOR` (e.g. `ref1.color = 044e`). Using `hue` causes `Undefined keyword 'hue'` errors.
+> 2. When declaring `RESOURCES=` on item templates, verify that resource item IDs exist in the base tables (e.g. use `RESOURCES=1 i_deed` for deeds/contracts rather than undefined symbols like `i_paper`).
+
+### 3.7 Target Callback Parameter Handling (`targetf`, `ARGS`, `ARGO`)
+> **INVARIANT 3.7**: When invoking target mode via `src.targetf <func_name> <extra_args>`:
+> - `<args>` (or `<argv[0]>`) holds the custom parameter string passed to `targetf` (e.g. the source item UID).
+> - `<argo>` (or `<argo.uid>`) holds the target object selected by the player's crosshair cursor.
+> - Do **NOT** access `<argo1>` or `<argo2>` as they do not exist in targetf callbacks and cause `Can't resolve <argo1>` runtime errors.
+>
+> ```scp
+> // ❌ WRONG: argo1/argo2 are undefined in targetf callback
+> ref1 = <argo1>
+> ref2 = <argo2>
+>
+> // ✅ CORRECT:
+> ref1 = <args>      // Source item UID passed in targetf
+> ref2 = <argo.uid>  // Target item selected by player
+> ```
+
+### 3.8 Item Graphic Resolution (`tilepic` & `serv.itemdef.<id>`)
+> **INVARIANT 3.8**: `tilepic` requires an explicit integer graphic ID (e.g. `5046`).
+> - Do **NOT** pass string DEFNAMEs (e.g. `i_sword_long`) directly to `tilepic`. Doing so causes Sphere to fail parsing the integer, throwing `Narrowing conversion from 64 to 32 bits signed integer will overflow` and rendering a blank/missing graphic.
+> - Always evaluate the DISPID into a decimal integer masked with `0ffff`:
+>
+> ```scp
+> // ❌ WRONG: Fails to render image and throws 64-to-32 bit overflow warning
+> local.itemGraphic = <serv.itemdef.<tag0.bod_type>.dispid>
+> tilepic 410 72 <local.itemGraphic>
+>
+> // ✅ CORRECT: Evaluates string DEFNAME into a clean integer graphic ID
+> if (<serv.itemdef.<tag0.bod_type>.isvalid>)
+>     local.itemGraphic = <eval <serv.itemdef.<tag0.bod_type>.dispid> & 0ffff>
+>     local.itemName = <serv.itemdef.<tag0.bod_type>.name>
+> else
+>     local.itemGraphic = <eval <tag0.bod_type> & 0ffff>
+>     local.itemName = <tag0.bod_type>
+> endif
+> tilepic 410 72 <dlocal.itemGraphic>
+> ```
+
+### 3.9 Exceptional Item Verification (`attr_exceptional`, `quality`, `tag.craftedby`)
+> **INVARIANT 3.9**: When verifying if a crafted item is exceptional (e.g. for Bulk Order Deeds or Crafting Quests):
+> 1. Check bitflag `ref.attr & attr_exceptional` (set during crafting in `CraftingEvents.scp`).
+> 2. Check quality rating `ref.quality >= 100`.
+> 3. Check maker's mark signature `!(<isempty <ref.tag.craftedby>>)`.
+>
+> ```scp
+> local.isExceptional = 0
+> if (<ref2.attr> & attr_exceptional) || (<ref2.quality> >= 100) || !(<isempty <ref2.tag.craftedby>>)
+>     local.isExceptional = 1
+> endif
+> ```
+
+### 3.10 Dialog Scope & Target Callback Reopening (`trysrc <src.uid> ref.sdialog <dialog>`)
+> **INVARIANT 3.10**: When reopening a dialog after an item target callback or event handler (e.g. `f_bod_small_targ`), NEVER call bare `sdialog <dialog>` from the function context.
+> - Calling bare `sdialog` executes on the player (`this` = player character), who lacks the item's internal `TAG0` properties, causing `0` values and `Can't resolve <serv.itemdef.0.isvalid>` errors.
+> - Always force execution on the target item pointer via `trysrc <src.uid> ref1.sdialog <dialog>`.
+>
+> ```scp
+> // ❌ WRONG: Executes dialog on player scope (this = player), reading tag0.bod_type as 0
+> sdialog d_bod_small
+>
+> // ✅ CORRECT: Reopens dialog in item scope (this = BOD item ref1)
+> trysrc <src.uid> ref1.sdialog d_bod_small
+> ```
+
 ---
 
 ## 4. Idiomatic Scripting Patterns
