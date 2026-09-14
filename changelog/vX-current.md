@@ -26,6 +26,11 @@
 - **`MODMAXWEIGHT`**: Replaces old `TAG.OVERRIDE.MAXWEIGHT` for corpse and bank max weight modifiers.
 - **`SPEECHCOLOROVERRIDE`**: Overrides player speech hue on classic and enhanced clients.
 - **`ADDCLILOC`**: Must now be called directly on the object being examined in `@ClientTooltip`.
+- **Native Dictionary Collections (`JTAG`, `JLOCAL`, `SERV.JTAG`)**:
+  - `JTAG.<dict>.<key> = <val>`: Persistent object-level dictionaries stored directly in world saves.
+  - `JLOCAL.<dict>.<key> = <val>`: Volatile execution-frame dictionaries cleaned up automatically.
+  - `SERV.JTAG.<dict>.<key> = <val>`: Global server dictionaries saved in `[GLOBALS]`.
+  - Built-in methods: `<dict.COUNT>`, `<dict.ISEMPTY>`, `<dict.HASKEY key>`, `<dict.KEYS>`, `<dict.VALUES>`, `dict.REMOVE key`, `dict.CLEAR`.
 
 ---
 
