@@ -1,285 +1,314 @@
-# SphereScript — Variables & Scope
+# SphereScript — Variables, Lists & Dictionaries
 
-> SphereScript has several distinct variable namespaces, each with different lifetime, scope, and persistence characteristics.
-
----
-
-## Variable Types at a Glance
-
-| Syntax | Namespace | Lifetime | Persists to save? | Description |
-| --- | --- | --- | --- | --- |
-| `local.X` | Function/trigger stack | Current call only | No | Temporary work variable |
-| `tag.X` / `tag0.X` | Object (char/item) | Object lifetime | **Yes** | Persistent custom property |
-| `ctag.X` / `ctag0.X` | Object (char/item) | Server session | No | Session-only tag (lost on logout/restart) |
-| `var.X` / `var0.X` | Global server | Server session | No | Global variable accessible from anywhere |
-| `ref1` … `ref5` | Current call context | Current call only | No | Assignable object reference |
-| `argn` / `argn1` / `argn2` / `argn3` | Trigger/function call | Current call | No | Numeric arguments from trigger/caller |
-| `args` | Trigger/function call | Current call | No | String argument |
-| `argo` | Trigger context | Current trigger | No | Object argument (item in drop, etc.) |
-| `argv[N]` | Function call | Current call | No | N-th argument passed to a `[FUNCTION]` |
-| `def.X` / `def0.X` | DEFNAME block | Entire session | No (in scripts) | Constant defined in `[DEFNAME]` |
+> SphereScript features multiple distinct variable namespaces, dynamic array lists, and native dictionary collections, each with tailored lifetime, scope, and persistence characteristics.
 
 ---
 
-## `local.X` — Local Variables
+## Variable & Collection Types at a Glance
+
+| Syntax | Namespace / Scope | Lifetime | Persists to Worldsave? | Description |
+| :--- | :--- | :--- | :---: | :--- |
+| `local.X` | Function / trigger stack | Execution frame | No | Temporary work variable |
+| `tag.X` / `tag0.X` | Object (`CObjBase`: char/item) | Object lifetime | **Yes** | Persistent custom property |
+| `ctag.X` / `ctag0.X` | Object (`CObjBase`: char/item) | Server session / client logout | No | Client session tag (cleared on restart/logout) |
+| `var.X` / `var0.X` | Global server (`g_ExprGlobals`) | Server lifetime | **Yes** (`[GLOBALS]`) | Global variable accessible from any script context |
+| `serv.list.X` / `list.X` | Global dynamic list array | Server lifetime | **Yes** (`[LIST]`) | Ordered 0-indexed list/queue for strings or numbers |
+| `jtag.dict.key` | Object (`CObjBase`: char/item) | Object lifetime | **Yes** | Persistent object-level dictionary collection |
+| `jlocal.dict.key` | Function / trigger stack | Execution frame | No | Volatile execution-scope dictionary collection |
+| `serv.jtag.dict.key` | Global server (`g_ExprGlobals`) | Server lifetime | **Yes** (`[GLOBALS]`) | Global server-level persistent dictionary collection |
+| `ref1` … `ref65535` | Execution call context | Execution frame | No | Assignable game object pointer reference |
+| `argn` / `argn1`…`3` | Trigger / function call | Execution frame | No | Numeric arguments passed to/from trigger or function |
+| `args` | Trigger / function call | Execution frame | No | Raw string argument passed to trigger or function |
+| `argo` | Trigger execution context | Current trigger | No | Event-related object pointer (item dropped, target, etc.) |
+| `argv[N]` | Function call parameters | Execution frame | No | 0-indexed argument token passed to a `[FUNCTION]` |
+| `def.X` / `def0.X` | Constant definitions | Server runtime | No (in scripts) | Constant declared in a `[DEFNAME]` block |
+| `resdef.X` | Resource definitions | Server runtime | No (in scripts) | Numeric resource ID of an item, char, or spell |
+
+---
+
+## `local.X` — Local Stack Variables
 
 ```scp
-[FUNCTION f_example]
-local.count = 0
-local.name = Hero
-local.count += 1
-sysmessage Count is <local.count>
+[FUNCTION f_calculate_reward]
+local.base = 100
+local.multiplier = 3
+local.reward = <eval <local.base> * <local.multiplier>>
+sysmessage Reward: <dlocal.reward> gold
 ```
 
-- Scoped to the current **function or trigger invocation**.
-- Destroyed when the function/trigger execution frame terminates.
-- **Normal function invocation (`f_subfunc`)**: A new isolated stack frame is created. Sub-functions **cannot** access caller `local.*` variables.
-- **`CALL` invocation (`CALL f_subfunc`)**: Reuses the active `CScriptTriggerArgs` scope. All caller `local.*` variables **are inherited, readable, and modifiable** by the sub-function! Any changes or new locals created in the sub-function persist back in the caller.
-- Name is case-insensitive: `local.Count` and `local.count` are identical.
-- `<dlocal.X>` reads the value and forces **decimal numeric interpretation** (essential when building dynamic keys):
-
-```scp
-local.idx = 3
-tag0.quest.<dlocal.idx>.complete = 1   // Sets tag0.quest.3.complete
-```
-
-### Local Variable Sharing via `CALL` Example
-```scp
-[FUNCTION f_main]
-local.Color = @044
-local.Title = Adventurer
-CALL f_helper_display
-// After CALL returns, local.Processed is available here
-sysmessage @,,1 Helper returned with status: <dlocal.Processed>
-
-[FUNCTION f_helper_display]
-// Directly reads caller's local variables without passing parameters:
-sysmessage <local.Color> Welcome, <local.Title>!
-local.Processed = 1
-```
+- **Scope**: Current function or trigger stack frame (`CScriptTriggerArgs`).
+- **Lifetime**: Destroyed automatically when the function/trigger terminates.
+- **Case-Insensitive**: `local.count` and `local.Count` access the same variable.
+- **Sub-Function Isolation**: Normal function calls (`f_subfunc`) create an independent stack frame. Sub-functions cannot read or overwrite the caller's locals.
+- **`CALL` Sharing**: Calling a function via `CALL f_subfunc` reuses the active trigger args frame, allowing the sub-function to read and modify the caller's `local.*` variables directly.
+- **`<dlocal.X>`**: Forces decimal numeric formatting, essential when constructing dynamic property keys:
+  ```scp
+  local.slot = 2
+  tag0.quest.<dlocal.slot>.completed = 1  // Writes tag0.quest.2.completed
+  ```
 
 ---
 
 ## `tag.X` / `tag0.X` — Persistent Object Tags
 
 ```scp
-tag.QuestProgress = 5        // Set (write)
-<tag.QuestProgress>          // Read → "5"
-tag.QuestProgress += 1       // Increment
-tag.QuestProgress =          // Clear (set empty)
+// Writing tags on an object:
+tag.FactionRank = 3
+tag.Title = The Undaunted
+
+// Reading tags:
+sysmessage Rank: <dtag0.FactionRank> (<tag.Title>)
+
+// Deleting a tag:
+tag.FactionRank =      // Setting empty deletes the key
 ```
 
-- Stored **on a char or item object**.
-- **Persist to save files** (`sphereworld.scp`, `spherechars.scp`).
-- `tag.X` and `tag0.X` are **identical** — the `0` suffix is a legacy notation. Same storage.
-- `<dtag0.X>` forces decimal numeric read (avoids string concatenation pitfalls):
-
-```scp
-// WRONG — reads tag0.quest.local.x literally:
-<tag0.quest.<local.x>.id>
-
-// CORRECT — evaluates local.x as decimal first:
-<tag0.quest.<dlocal.x>.id>
-```
-
-- Setting a tag to empty string effectively **deletes** it:
-  ```scp
-  tag.MyProp =         // Clears the tag
-  ```
-
-### `TAG.OVERRIDE.*` — Special Override Tags
-
-Some engine properties can be overridden per-object using specific `TAG.OVERRIDE.*` or `TAG.*` names defined by the core. See [`keywords/char-properties.md`](../keywords/char-properties.md) and [`keywords/item-properties.md`](../keywords/item-properties.md) for the full list.
+- **Scope**: Bound to a specific character (`CChar`) or item (`CItem`) instance.
+- **Persistence**: **Saved to disk** in `sphereworld.scp` or `spherechars.scp` under the object's section.
+- **Tag vs Tag0**: `tag.X` returns empty string if undefined; `tag0.X` returns `0` if undefined (ideal for numeric checks).
+- `<dtag0.X>` forces decimal evaluation.
 
 ---
 
-## `ctag.X` / `ctag0.X` — Session Tags (Non-Persistent)
+## `ctag.X` / `ctag0.X` — Client Session Tags (Non-Persistent)
 
 ```scp
-ctag.CurrentTarget = <src.uid>   // Set
-<ctag.CurrentTarget>             // Read
+ctag.SelectedMenuPage = 2
+ctag.CraftingCategory = Swords
 ```
 
-- Same as `tag` but **NOT saved to disk**.
-- Lost when the server restarts or the character logs out (depending on implementation).
-- Useful for session state: current dialog context, temporary cooldowns, UI state.
-- `ctag0.X` and `ctag.X` are identical.
+- **Scope**: Bound to a character or client.
+- **Persistence**: **NOT saved to disk**. Cleared when the client disconnects or the server restarts.
+- **Use Case**: Gump navigation state, temporary combat cooldowns, confirmation dialog flags.
 
 ---
 
 ## `var.X` / `var0.X` — Global Server Variables
 
 ```scp
-var.WorldClock = <new.uid>      // Set globally
-<var0.WorldClock>               // Read from anywhere
-```
+// Setting global variables:
+var.EventActive = 1
+var.CurrentChampion = Sir Lancelot
+var.JackpotPool = 50000
 
-- Accessible from **any script context**, on any object.
-- Not tied to any specific object.
-- **Not persisted to save** by default (unless using `var0.*` and explicitly saved).
-- Use `var` for server-wide state like timers, world events, flags.
-
----
-
-## `ref1` … `ref5` — Object References
-
-```scp
-ref1 = <src.uid>         // Assign UID of src to ref1
-<ref1.name>              // Access name of that object
-ref1.color = 0x44        // Modify property on referenced object
-
-ref2 = <findlayer.layer_pack.uid>
-forcont <ref2.uid>
-    // iterate pack contents
-endfor
-```
-
-- `ref1` through `ref5` hold **UIDs of game objects**.
-- Once assigned, all `<ref1.PROPERTY>` accesses operate on that object.
-- Assigning an invalid UID is valid (ref becomes invalid, accessing it returns error in X1).
-- Use `<ref1.isvalid>` to check before accessing.
-- Useful to avoid repeated lookups of the same object.
-
----
-
-## `argn`, `argn1`, `argn2`, `argn3` — Numeric Trigger Arguments
-
-Each trigger defines which `argn*` variables are set as **IN** (read from engine) and which can be modified as **OUT** (written back to engine):
-
-```scp
-ON=@GetHit
-    // argn1 = damage being applied (IN/OUT)
-    // argn2 = damage type flags (IN/OUT)
-    if <argn2> & dam_fire
-        argn1 -= <muldiv <argn1>,25,100>  // -25% fire damage
-    endif
-```
-
-- `argn` is an alias for `argn1`.
-- `argn1`, `argn2`, `argn3` are separate numeric slots.
-- Modifying them in a trigger affects the engine's behavior (OUT semantics).
-- See [`../triggers/`](../triggers/INDEX.md) for the specific IN/OUT per trigger.
-
----
-
-## `args` — String Trigger Argument
-
-```scp
-ON=@Say
-    // args = what the char said
-    if (strmatch(guard*,<args>))
-        // player said something starting with "guard"
-    endif
-```
-
-- `args` is a string argument, context-dependent per trigger.
-- In `[FUNCTION]` calls: `args` = the raw argument string passed to the function.
-- `<strarg <args>>` — returns the first word of `args`.
-- `<streat <args>>` — returns everything AFTER the first word.
-
----
-
-## `argo` — Object Argument
-
-```scp
-ON=@DropOn_Char
-    // argo = the item being dropped
-    if <argo.baseid> == i_gold
-        <argo.remove>
-        hits += 10
-    endif
-```
-
-- `argo` is the **object involved** in certain triggers (the dropped item, the corpse, etc.).
-- Access its properties with `<argo.PROPERTY>`.
-- Not all triggers set `argo` — consult the trigger catalog.
-
----
-
-## `argv[N]` — Function Arguments by Index
-
-```scp
-[FUNCTION f_DoSomething]
-// Called as: f_DoSomething arg0,arg1,arg2
-local.type   = <argv[0]>
-local.amount = <argv[1]>
-local.target = <argv[2]>
-```
-
-- Arguments passed to a `[FUNCTION]` are accessed via `<argv[0]>`, `<argv[1]>`, etc.
-- **Zero-indexed**.
-- If fewer arguments are passed than referenced, the missing ones return empty string.
-- The raw argument list is also in `<args>`, parseable with `<strarg <args>>` (first word) and `<streat <args>>` (rest).
-
----
-
-## `def.X` / `def0.X` — DEFNAME Constants
-
-```scp
-// In a [DEFNAME] block:
-[DEFNAME myconsts]
-max_quest_slots   8
-hue_error         0044
-
-// In code:
-if <tag0.quests> >= <def.max_quest_slots>
-    sysmessage Quest slot limit reached!
+// Reading global variables anywhere:
+if (<var0.EventActive> == 1)
+    sysmessage The event is live! Current Champion: <var.CurrentChampion>
 endif
-color = <def.hue_error>
 ```
 
-- `<def.X>` returns the **full value** (string).
-- `<def0.X>` returns the **first word/token** of the value.
-- `<RESDEF.i_gold>` — returns the **numeric resource ID** of a named resource (replaces old `<DEF.i_gold>` for this purpose in X1).
-- Constants are **global** — accessible from any script.
-- Redefinition of a DEFNAME is warned (even without `DEBUGF_SCRIPTS`).
+- **Scope**: Server-wide global namespace (`g_ExprGlobals.m_VarGlobals`). Accessible from any script, trigger, or function across all objects.
+- **Persistence**: **Saved to disk** in `sphereworld.scp` under the `[GLOBALS]` section upon server save (`SERV.SAVE`).
+- **`<var.X>` vs `<var0.X>`**: `<var.X>` returns empty string if undefined; `<var0.X>` returns `0` if undefined.
+- **`<dvar.X>`**: Evaluates and formats the variable as a decimal number.
+- **Console Inspection**:
+  ```scp
+  serv.varlist       // Dumps all global variables to console
+  serv.varlist log   // Dumps all global variables to log file
+  ```
 
 ---
 
-## Scope Pitfalls
+## `serv.list.X` / `list.X` — Global Dynamic Lists (Arrays)
 
-### 1. Arithmetic without `<eval>`
-
-```scp
-// WRONG — string concatenation:
-tag.count = <tag.count>+1   // Result: "5+1" not "6"
-
-// CORRECT:
-tag.count = <eval <tag.count>+1>
-```
-
-### 2. Dynamic index without `d` prefix
+Source-X provides high-performance dynamic lists (`CListDefMap` / `CListDefCont`) backed by `std::deque` for storing ordered sequences of numbers or strings.
 
 ```scp
-// WRONG — doesn't evaluate local.x:
-<tag0.slot.<local.x>.uid>    // Reads "slot.5.uid" literally? No, it may error.
+// Creating and populating lists:
+serv.list.ActiveMinigames.add MiningMania
+serv.list.ActiveMinigames.add DungeonRush
+serv.list.ActiveMinigames.add ArenaPvP
 
-// CORRECT:
-<tag0.slot.<dlocal.x>.uid>   // dlocal forces decimal evaluation first
+// Setting multiple comma-separated entries at once:
+serv.list.HighScores.set 1500, 1200, 950, 800
+
+// Appending multiple comma-separated entries:
+serv.list.HighScores.append 650, 400
 ```
 
-### 3. `local` does not propagate to sub-functions
+### List Query Syntax
+
+| Query Syntax | Return Value | Example |
+| :--- | :--- | :--- |
+| `<serv.list.NAME>` | Formatted string containing all elements enclosed in `{ }` | `{"MiningMania","DungeonRush","ArenaPvP"}` |
+| `<serv.list.NAME.N>` | Element at 0-based index `N` | `<serv.list.ActiveMinigames.0>` → `"MiningMania"` |
+| `<serv.list.NAME.count>` | Total number of elements in the list | `<serv.list.ActiveMinigames.count>` → `3` |
+| `<serv.list.NAME.findelem VAL>` | 0-based index of element matching `VAL`, or `-1` if not found | `<serv.list.ActiveMinigames.findelem DungeonRush>` → `1` |
+| `<serv.list.NAME.N.findelem VAL>` | Searches for `VAL` starting from index `N` | `<serv.list.HighScores.2.findelem 800>` |
+
+### List Mutation Verbs
+
+| Verb Syntax | Operation Description |
+| :--- | :--- |
+| `serv.list.NAME = VAL` | Clears list and initializes it with single element `VAL` |
+| `serv.list.NAME.add VAL` | Pushes element `VAL` to the end of the list |
+| `serv.list.NAME.set V1, V2, ...` | Clears list and populates with comma-separated elements |
+| `serv.list.NAME.append V1, V2, ...` | Appends comma-separated elements to the end of the list |
+| `serv.list.NAME.N = VAL` | Overwrites the element at 0-based index `N` with `VAL` |
+| `serv.list.NAME.N.insert VAL` | Inserts `VAL` at index `N`, shifting subsequent elements right |
+| `serv.list.NAME.N.remove` | Deletes the element at index `N` |
+| `serv.list.NAME.clear` | Deletes the entire list from memory |
+| `serv.list.NAME.sort [type]` | Sorts the list. Types: `asc` (default), `desc`, `iasc` (case-insensitive), `idesc` |
+
+### Server List Administration Verbs
 
 ```scp
-[FUNCTION f_outer]
-local.x = 42
-f_inner          // local.x is NOT visible inside f_inner
+serv.printlists        // Dumps all global lists and their contents to console
+serv.printlists log    // Dumps all global lists to log file
+serv.clearlists        // Deletes all lists across the server
+serv.clearlists arena* // Deletes only lists matching the mask "arena*"
 ```
-
-Use `argn*` or `args` to pass data to called functions.
 
 ---
 
-## Summary Table — When to Use Each
+## Native Dictionaries (`JTAG`, `JLOCAL`, `SERV.JTAG`)
 
-| Use case | Variable |
-| --- | --- |
-| Temporary counter in a trigger | `local.X` |
-| Flag that survives logout/restart | `tag0.X` (on char) |
-| Flag for current session only | `ctag0.X` |
-| Server-wide state (world timer UID, etc.) | `var.X` |
-| Hold a reference to another object | `ref1` … `ref5` |
-| Read engine-provided trigger input | `argn1`, `argn2`, `argn3`, `argo`, `args` |
-| Override engine behavior | Modify `argn*` in OUT trigger |
-| Script-defined constant | `<def.MY_CONST>` |
-| N-th argument to a function | `<argv[N]>` |
+Source-X features built-in dictionary / hashmap collections (`CDictionaryMap`) providing $O(1)$ key-value lookup and manipulation with case-insensitive keys.
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        SPHEREX DICTIONARY SCOPES                       │
+├──────────────────┬───────────────────────┬─────────────────────────────┤
+│ Scope Prefix     │ Storage Target        │ Persistence & Lifecycle     │
+├──────────────────┼───────────────────────┼─────────────────────────────┤
+│ JTAG.dict.key    │ CObjBase (Char/Item)  │ Persists to worldsave files │
+│ JLOCAL.dict.key  │ CScriptTriggerArgs    │ Cleared on function exit    │
+│ SERV.JTAG.dict.key│ CExprGlobals         │ Persists to [GLOBALS]       │
+└──────────────────┴───────────────────────┴─────────────────────────────┘
+```
+
+### 1. Object Dictionaries (`JTAG`)
+Stores structured key-value maps directly on characters or items. Persists across server restarts in `sphereworld.scp`.
+
+```scp
+// Writing to character object dictionary:
+src.jtag.combat_stats.crits = 15
+src.jtag.combat_stats.dodges = 8
+src.jtag.combat_stats.total_damage = 4520
+
+// Reading:
+sysmessage Critical hits: <dsrc.jtag.combat_stats.crits>
+```
+
+### 2. Execution Stack Dictionaries (`JLOCAL`)
+Provides structured temporary maps for complex script logic, loot generation, or dialog builders without polluting the global scope or leaking memory.
+
+```scp
+[FUNCTION f_calculate_loot_drop]
+jlocal.loot.gold = 500
+jlocal.loot.gems = 12
+jlocal.loot.special_scroll = s_flamestrike
+
+if (<jlocal.loot.gold> > 100)
+    serv.newitem i_gold, <jlocal.loot.gold>, <src.findlayer.21.uid>
+endif
+// jlocal.loot is automatically freed when f_calculate_loot_drop finishes!
+```
+
+### 3. Global Server Dictionaries (`SERV.JTAG`)
+Stores server-wide structured configuration and dynamic tables. Persists automatically in `sphereworld.scp` under `[GLOBALS]`.
+
+```scp
+// Setting global configuration maps:
+serv.jtag.shard_config.motd = Welcome to UO Ascension!
+serv.jtag.shard_config.pvp_enabled = 1
+serv.jtag.shard_config.exp_multiplier = 2
+
+// Querying:
+if (<serv.jtag.shard_config.pvp_enabled> == 1)
+    sysmessage PvP is active!
+endif
+```
+
+### Native Dictionary Methods
+
+All three scopes (`JTAG`, `JLOCAL`, `SERV.JTAG`) support Python-like dictionary operations:
+
+| Method / Property | Return Type | Description | Example |
+| :--- | :---: | :--- | :--- |
+| `<dict.COUNT>` | Integer | Number of key-value pairs stored in the dictionary | `<src.jtag.combat_stats.COUNT>` |
+| `<dict.ISEMPTY>` | Boolean (`0`/`1`) | `1` if dictionary has 0 keys, `0` otherwise | `<jlocal.loot.ISEMPTY>` |
+| `<dict.HASKEY key>` | Boolean (`0`/`1`) | `1` if `key` exists in the dictionary, `0` otherwise | `<serv.jtag.config.HASKEY motd>` |
+| `<dict.KEYS>` | String | Comma-separated list of all keys in the dictionary | `<src.jtag.combat_stats.KEYS>` → `crits,dodges,total_damage` |
+| `<dict.VALUES>` | String | Comma-separated list of all values in the dictionary | `<src.jtag.combat_stats.VALUES>` → `15,8,4520` |
+| `dict.REMOVE key` / `DELETE key` | Verb | Deletes specific key from dictionary | `src.jtag.combat_stats.REMOVE crits` |
+| `dict.CLEAR` | Verb | Wipes all entries in the dictionary | `src.jtag.combat_stats.CLEAR` |
+
+---
+
+## `ref1` … `ref65535` — Object References
+
+```scp
+ref1 = <src.uid>
+ref2 = <src.findlayer.21.uid>
+
+<ref1.name> says hello!
+ref2.color = 044
+```
+
+- **Scope**: Temporary object pointer index (1 through 65535).
+- **Validation**: Always verify `<ref1.isvalid>` before accessing properties on unverified references to avoid runtime errors.
+
+---
+
+## `argn*`, `args`, `argo`, `argv` — Trigger & Function Arguments
+
+| Variable | Type | In/Out | Description |
+| :--- | :--- | :---: | :--- |
+| `argn` / `argn1` | Integer | IN / OUT | First numerical argument of the trigger or function |
+| `argn2` | Integer | IN / OUT | Second numerical argument (e.g. damage type flags) |
+| `argn3` | Integer | IN / OUT | Third numerical argument (e.g. spell or skill info) |
+| `args` | String | IN / OUT | String argument passed to trigger or function |
+| `argo` | Object UID | IN / OUT | Context-dependent game object (dropped item, target entity) |
+| `argv[N]` | String/Int | IN | N-th 0-based token from comma-separated `args` parameter list |
+
+---
+
+## `def.*` vs `resdef.*` — Constants & Resource Definitions
+
+```scp
+[DEFNAME server_tuning]
+max_level       100
+default_hue     0481
+
+// Accessing:
+local.max = <def.max_level>          // Returns "100"
+local.itemid = <resdef.i_gold>       // Returns integer resource ID of i_gold
+```
+
+- `<def.SYMBOL>`: Retrieves string constant declared in `[DEFNAME]`.
+- `<def0.SYMBOL>`: Retrieves the first token/word of the constant.
+- `<resdef.SYMBOL>`: Retrieves the internal numeric resource ID of an item, character, or spell definition.
+
+---
+
+## Common Scope Pitfalls & Best Practices
+
+### 1. Arithmetic requires `<eval>`
+```scp
+// ❌ WRONG: Performs string concatenation "10+5"
+tag.count = <tag.count>+5
+
+// ✅ CORRECT: Evaluates mathematical expression
+tag.count = <eval <tag.count> + 5>
+```
+
+### 2. Dynamic Keys require `<dlocal.*>` / `<dtag0.*>`
+```scp
+// ❌ WRONG: Evaluates token literally inside key
+tag0.quest.<local.step>.status = 1
+
+// ✅ CORRECT: Formats as decimal integer first
+tag0.quest.<dlocal.step>.status = 1
+```
+
+### 3. Choosing the Right Storage Mechanism
+
+| Scenario | Recommended Type | Rationale |
+| :--- | :--- | :--- |
+| Quest progress on a player | `tag0.X` or `jtag.quest.X` | Must persist across restarts and logout. |
+| Temporary math calculation in trigger | `local.X` or `jlocal.math.X` | Fast, clean, automatically garbage collected. |
+| Global server event state & timer | `var0.X` or `serv.jtag.event.X` | Accessible from every script; saved to `sphereworld.scp`. |
+| Queue of waiting tournament players | `serv.list.TourneyQueue` | Requires ordered indexing, insertion, and sorting. |
+| Complex multi-field entity data | `jtag.entity_data.X` | Grouped key-value mapping with dictionary methods (`KEYS`, `HASKEY`). |
+

@@ -16,7 +16,7 @@ This is the complete SphereScript language reference for SphereServer X. It docu
 | [01 — File Structure](language/01-file-structure.md) | `.scp` file anatomy, sections, comments, VERSION, EOF |
 | [02 — Section Blocks](language/02-section-blocks.md) | All `[BLOCK]` types and their roles |
 | [03 — Triggers](language/03-triggers.md) | `ON=@Event` system, trigger call order, return values |
-| [04 — Variables & Scope](language/04-variables.md) | `local`, `tag`, `ctag`, `var`, `ref`, `argo`, `argn`, `args`, `def` |
+| [04 — Variables, Lists & Dictionaries](language/04-variables.md) | `local`, `tag`, `ctag`, `var`, `list`, `jtag`, `jlocal`, `serv.jtag`, `ref`, `argo`, `argn`, `args`, `def` |
 | [05 — Operators & Expressions](language/05-operators-expressions.md) | `<eval>`, `<feval>`, `<muldiv>`, `<qval>`, `<r>`, string ops |
 | [06 — Control Flow](language/06-control-flow.md) | `if/elif/else/endif`, `for`, `while`, `forcont`, `doswitch` |
 | [07 — Functions](language/07-functions.md) | `[FUNCTION]` blocks, `argv`, `return`, calling conventions |

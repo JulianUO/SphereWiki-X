@@ -62,6 +62,21 @@ This skill provides the definitive specification, memory models, object relation
   - `ANCHOR`: Anchor state (`0`=up, `1`=down).
   - Triggers: `@ShipMove`, `@ShipStop`, `@ShipTurn`.
 
+### 2.3 Variables, Lists & Native Dictionaries
+- **Volatile Execution Stack**:
+  - `LOCAL.X`: Temporary work variables scoped to the current stack frame.
+  - `JLOCAL.dict.key`: Temporary dictionary maps with structured Python-like methods (`COUNT`, `KEYS`, `HASKEY`).
+- **Object-Bound Memory (`CObjBase`)**:
+  - `TAG0.X` / `TAG.X`: Persistent custom string/numeric variables saved to worldsave files.
+  - `CTAG0.X` / `CTAG.X`: Session-only tags on characters/clients cleared on logout or restart.
+  - `JTAG.dict.key`: Persistent object-level dictionary collections saved automatically to worldsave files.
+- **Global Server Scope (`g_ExprGlobals`)**:
+  - `VAR0.X` / `VAR.X`: Global server variables accessible across all objects and scripts; saved in `[GLOBALS]`.
+  - `SERV.LIST.X` / `LIST.X`: Dynamic ordered array lists with `<list.NAME.count>`, `<list.NAME.findelem>`, `.add`, `.set`, `.append`, `.sort`, `.clear`.
+  - `SERV.JTAG.dict.key`: Global server dictionary collections saved in `[GLOBALS]`.
+- **Dictionary API Methods** (`JTAG`, `JLOCAL`, `SERV.JTAG`):
+  - `<dict.COUNT>`, `<dict.ISEMPTY>`, `<dict.HASKEY key>`, `<dict.KEYS>`, `<dict.VALUES>`, `dict.REMOVE key`, `dict.CLEAR`.
+
 ---
 
 ## 3. Core Interpreter & Memory Invariants (C++ Engine)
